@@ -1,0 +1,32 @@
+[
+  {
+    "name": "OpenAI",
+    "base_url": "https://api.openai.com",
+    "endpoint": "/v1/chat/completions",
+    "model": "gpt-4o-mini",
+    "api_key_env": "OPENAI_API_KEY",
+    "auth_header": "Authorization",
+    "auth_prefix": "Bearer",
+    "default_params": {
+      "temperature": 0.7
+    }
+  },
+  {
+    "name": "DeepSeek (OpenAI-compatible)",
+    "base_url": "https://api.deepseek.com",
+    "endpoint": "/v1/chat/completions",
+    "model": "deepseek-chat",
+    "api_key_env": "DEEPSEEK_API_KEY",
+    "auth_header": "Authorization",
+    "auth_prefix": "Bearer"
+  },
+  {
+    "name": "Local OpenAI-Compatible",
+    "base_url": "http://localhost:8000",
+    "endpoint": "/v1/chat/completions",
+    "model": "local-model",
+    "api_key_env": "",
+    "auth_header": "Authorization",
+    "auth_prefix": "Bearer"
+  }
+]
