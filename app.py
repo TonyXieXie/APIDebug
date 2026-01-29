@@ -180,7 +180,7 @@ def detect_api_mode(endpoint: str) -> str:
     return "chat_completions"
 
 
-def messages_to_responses_input(messages: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+def messages_to_responses_input(messages: List[Dict[str, Any]], *, system_role: str = "system") -> List[Dict[str, Any]]:
     input_items: List[Dict[str, Any]] = []
     for item in messages:
         if not isinstance(item, dict):
@@ -188,6 +188,8 @@ def messages_to_responses_input(messages: List[Dict[str, Any]]) -> List[Dict[str
         role = item.get("role")
         if not role:
             continue
+        if role == "system" and system_role:
+            role = system_role
         if "content" not in item:
             continue
         input_items.append({"type": "message", "role": role, "content": item.get("content")})
@@ -473,18 +475,10 @@ def load_current_request_json() -> None:
             else:
                 payload.pop("max_output_tokens", None)
 
-            if use_raw_messages:
-                messages = parse_messages(use_raw_messages, raw_messages_json, system_prompt, user_prompt)
-                if messages is None:
-                    return
-                payload["input"] = messages_to_responses_input(messages)
-            else:
-                if system_prompt.strip():
-                    payload["instructions"] = system_prompt.strip()
-                if not user_prompt.strip():
-                    st.error("User prompt is required when not using raw messages.")
-                    return
-                payload["input"] = user_prompt
+            messages = parse_messages(use_raw_messages, raw_messages_json, system_prompt, user_prompt)
+            if messages is None:
+                return
+            payload["input"] = messages_to_responses_input(messages, system_role=str(st.session_state.get("responses_system_role", "developer")))
         else:
             messages = parse_messages(use_raw_messages, raw_messages_json, system_prompt, user_prompt)
             if messages is None:
@@ -586,7 +580,7 @@ api_mode_choice = st.sidebar.selectbox(
     ["Auto", "Chat Completions", "Responses"],
     index=0,
     key="api_mode_choice",
-    help="Auto infers from endpoint. Chat Completions uses `messages`; Responses uses `input`/`instructions`.",
+    help="Auto infers from endpoint. Chat Completions uses `messages`; Responses uses role-based `input` messages.",
 )
 if api_mode_choice == "Responses":
     api_mode = "responses"
@@ -602,6 +596,16 @@ elif api_mode == "chat_completions" and "/responses" in effective_endpoint.lower
     st.sidebar.warning("API mode is Chat Completions but endpoint includes `/responses`.")
 else:
     st.sidebar.caption(f"API mode: {api_mode}")
+
+responses_system_role = str(st.session_state.get("responses_system_role", "developer"))
+if api_mode == "responses":
+    responses_system_role = st.sidebar.selectbox(
+        "System role (Responses)",
+        ["developer", "system"],
+        index=0 if responses_system_role != "system" else 1,
+        key="responses_system_role",
+        help="Some OpenAI-compatible /v1/responses endpoints reject `system` messages. Use `developer` for compatibility.",
+    )
 
 api_key_override = st.sidebar.text_input("API key override", type="password")
 model_override = st.sidebar.text_input("Model override", value=model_default, key="model_override")
@@ -893,18 +897,10 @@ if send:
             else:
                 payload.pop("max_output_tokens", None)
 
-            if use_raw_messages:
-                messages = parse_messages(use_raw_messages, raw_messages_json, system_prompt, user_prompt)
-                if messages is None:
-                    st.stop()
-                payload["input"] = messages_to_responses_input(messages)
-            else:
-                if system_prompt.strip():
-                    payload["instructions"] = system_prompt.strip()
-                if not user_prompt.strip():
-                    st.error("User prompt is required when not using raw messages.")
-                    st.stop()
-                payload["input"] = user_prompt
+            messages = parse_messages(use_raw_messages, raw_messages_json, system_prompt, user_prompt)
+            if messages is None:
+                st.stop()
+            payload["input"] = messages_to_responses_input(messages, system_role=str(st.session_state.get("responses_system_role", "developer")))
         else:
             messages = parse_messages(use_raw_messages, raw_messages_json, system_prompt, user_prompt)
             if messages is None:

@@ -35,9 +35,11 @@ You can override the config file path with `LLM_DEBUG_CONFIG`.
 The sidebar **API mode** controls how the request payload is built (and how the output text is extracted):
 
 - **Chat Completions**: sends `messages` to `/v1/chat/completions` (assistant text from `choices[].message.content`)
-- **Responses**: sends `input`/`instructions` to `/v1/responses` (assistant text from `output[].content[].text`)
+- **Responses**: sends role-based `input` messages (system/user) to `/v1/responses` (assistant text from `output[].content[].text`)
 
 **Auto** infers the mode from the endpoint path (if it contains `/responses`, it assumes Responses).
+
+Some OpenAI-compatible `/v1/responses` implementations reject `role: system`. In that case, set **System role (Responses)** to `developer`.
 
 ## Import/Export
 
